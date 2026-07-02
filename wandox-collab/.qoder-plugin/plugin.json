@@ -10,5 +10,5 @@
   "category": "productivity",
   "tags": ["skill", "mcp"],
   "skills": "./skills/",
-  "mcpServers": "./mcp.json"
+  "mcpServers": "./.mcp.json"
 }
