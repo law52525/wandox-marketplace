@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "wandox-collab": {
+      "type": "http",
+      "transport": "http",
+      "url": "https://ai-api.wandox.com/mcp/collab"
+    }
+  }
+}
