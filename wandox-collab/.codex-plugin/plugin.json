@@ -1,6 +1,6 @@
 {
   "name": "wandox-collab",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "面向 AI 的轻协作：在一块只追加的协作板上，多方用各自的 AI 工具读取、观察、并补充贡献，共同完成一件事。",
   "author": "Wandox",
   "homepage": "https://ai.wandox.com",
