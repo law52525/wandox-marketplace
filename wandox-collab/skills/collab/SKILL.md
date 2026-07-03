@@ -55,6 +55,9 @@ description: >-
   `~/.wandox/identity.json` 不存在时，才在写入前问一句。可与提交前的确认闸门合并在同一轮交互，
   不额外增加往返。
 - 若 `~/.wandox/identity.json` 已存在：静默读取，作为默认 `author`，全程零打扰。
+- 写入类工具（`collab_create_board` / `collab_append_entry`）的 `author_name` 与 `participant_id`
+  均为**必填**：`author_name` 传 display_name（上板展示），`participant_id` 随调用传给服务端做
+  来源关联（纯内部字段，服务端也不会把它展示给任何人）。
 
 **问法与回执用固定话术（一问一答一句话）**：
 
@@ -141,7 +144,9 @@ participant_id 过滤）列出候选供其选择，再进入对应模式。
 
 1. 确认 `goal`（**必填**），可选 `title` / `description` / `initial_context`。goal 必须明确——它是后续所有
    观察和质检的"北极星"，且创建后不可修改。**没有 goal 不创建板**：先追问用户这块板要协作完成什么。
-2. 调 `collab_create_board`（goal 必填），拿到 `board_id`（格式如 `bd_7Kf3aP9xQ2`）。
+2. 创建是写入操作：先走 ensure_identity（0 节，首次会问一句名字），然后调
+   `collab_create_board(goal, author_name, title?, description?, initial_context?, participant_id)`
+   （goal / author_name / participant_id 必填，取自 identity.json），拿到 `board_id`（格式如 `bd_7Kf3aP9xQ2`）。
 3. 回给用户 `board_id`，按 0.5 节话术引导：「协作板建好了。把这个邀请码发给小伙伴，让他们的 AI 看看：bd_xxx」。
 
 **提示词（system 片段）**
@@ -275,25 +280,41 @@ participant_id 过滤）列出候选供其选择，再进入对应模式。
 最后一句话请求确认：确认 / 改改 / 算了。在用户明确确认前，不得调用 collab_append_entry。
 ```
 
-### 阶段 D：落地追加（Commit）
+### 阶段 D：落地追加（Commit）——正文先行，附件后绑
 
-（走到这一步的附件都已通过质检的 200 MB 上限检查。）用户确认后，先处理附件——**统一一条路径,不分大小,字节不经过 MCP/模型**：
-1. `collab_request_attachment_upload(board_id, display_name, mime?, size?)` → 拿到 `attachment_id` 与 `upload_url`（带上 `size`，服务端可再兜底校验）。
+（走到这一步的附件都已通过质检的 200 MB 上限检查。）**流程顺序：先落 entry，再传附件**——
+附件在预留时就绑定 `entry_id`，从根源杜绝孤儿附件。
+
+**D0 · 落地前预检**（此时还来得及无损退出）：逐一确认 `attachments_planned` 中每个文件
+存在、可读、大小与质检时一致。任一预检不过 → **不 append**，向用户说明哪个文件有问题。
+
+**D1 · 落正文**：`collab_append_entry(board_id, content, author_name, entry_type?, references?[, reply_to], participant_id)` → 拿到 `entry_id`。
+- **`author_name` 与 `participant_id` 必填，由 skill 读取本机 `~/.wandox/identity.json` 后显式传入**
+  （服务端不自动读取本地身份）。
+- 正文中对附件的表述用不依赖上传时序的写法（如"附件：xxx"），不要写"已上传"。
+
+**D2 · 传附件**（每个附件依次执行，字节不经过 MCP/模型）：
+1. `collab_request_attachment_upload(board_id, entry_id, display_name, mime?, size?)` →
+   拿到 `attachment_id` 与 `upload_url`（附件预留即绑定该 entry）。
 2. skill 用本机 shell 把文件**直接 PUT 到 `upload_url`**（如 `curl -T <file> <upload_url>`）——字节直传 OSS。
-3. `collab_commit_attachment(attachment_id)` → 确认入库,拿到最终 `url`。
+3. `collab_commit_attachment(attachment_id)` → 定稿，附件已绑定到 entry。
 
-每个附件重复 1–3,收集各 `attachment_id`。然后：
+**D3 · 失败处理（红线：补传不重发）**：正文已追加且不可撤回，附件上传失败时——
+- 对**同一 `entry_id`** 重试 D2（重新 request → PUT → commit），最多自动重试 2 次；
+- **禁止再 append 一条新 entry** 来"重发"，否则板上出现重复内容；
+- 仍失败则人话交代："内容已经发到协作板了，但文件 xxx 没传上；稍后对我说'把附件补传一下'我再试。"
+  （entry_id 记在会话里，补传时继续用它走 D2。）
 
-`collab_append_entry(board_id, content, entry_type, references, attachment_ids[, reply_to])`。
-   **`author` 由 skill 读取本机 `~/.wandox/identity.json` 后显式传入**（服务端不自动读取本地身份）；
-   若是针对某条已有 entry 的回应，带上 `reply_to`。
-3. 回传 `entry_id`，一句话告知"已追加，他人凭 board_id 在观察模式即可看到"。
+成功后回传 `entry_id`，按 0.5 节话术一句话告知"已发到协作板，小伙伴凭邀请码就能看到"。
 
 ```
-用户已确认。先处理 attachments_planned 中的每个附件（统一流程,不分大小）：
-collab_request_attachment_upload → 本机 curl -T 直传 upload_url → collab_commit_attachment，拿到各 attachment_id。
-再调用 collab_append_entry 一次性追加（正文含引用与附件，author 显式取自本机 identity.json）。
-成功后只回传 entry_id 与一句话确认，不赘述。
+用户已确认。执行顺序（先正文后附件，附件绑定 entry_id）：
+D0 预检 attachments_planned 每个文件（存在/可读/大小一致），不过则不 append 并说明。
+D1 collab_append_entry 落正文（author_name 与 participant_id 必填，显式取自本机 identity.json）→ 拿到 entry_id。
+D2 对每个附件：collab_request_attachment_upload(board_id, entry_id, ...) → 本机 curl -T 直传 upload_url
+   → collab_commit_attachment 定稿。
+D3 上传失败：对同一 entry_id 重试（最多 2 次）；禁止重发新 entry；仍失败则告知用户可稍后让我补传。
+成功后只回传一句话确认，不赘述。
 ```
 
 ---
@@ -304,7 +325,9 @@ collab_request_attachment_upload → 本机 curl -T 直传 upload_url → collab
 观察结论 ─► A生成草稿 ─► B质检(后台) ─┬─ 红线命中 ─► 体贴拦下+给出路 ─► 用户改后回到 B
                                      ├─ 不通过无红线 ─► 温和建议(仍可直发) ─► C确认卡
                                      └─ 通过 ─► C确认卡 ─┬─ 算了/改改 ─► 结束 / 回到 A
-                                                        └─ 确认 ─► D上传附件 + append ─► 完成
+                                                        └─ 确认 ─► D0预检 ─► D1落正文 ─► D2传附件 ─► 完成
+                                                                    │                    └─ 失败 ─► 对同一 entry 补传（不重发）
+                                                                    └─ 预检不过 ─► 不 append，说明后结束
 ```
 
 ## 6. 不变量（任何时候都要守住）
@@ -315,4 +338,5 @@ collab_request_attachment_upload → 本机 curl -T 直传 upload_url → collab
 - 观察**不写**、补充**才写**。
 - 未经质检不追加；**红线是唯一硬拦截**，其余质检结果只产生建议不拦路；质检结果 ≠ 自动追加，**用户确认是最后闸门**。
 - 质检的分数、维度、判定字眼与内部字段名**永不进入用户可见输出**（0.5 节 + 4.B 呈现层禁词）。
-- 附件**懒上传**：草稿阶段只登记，确认后才上传到 OSS。
+- 附件**懒上传、正文先行**：草稿阶段只登记；用户确认后先落 entry，附件预留即绑定 entry_id 再上传。
+- 附件上传失败**只对原 entry 补传，绝不重发新 entry**（板 append-only，重发即重复内容）。
