@@ -14,8 +14,15 @@ description: >-
 面向 AI 的简单协作系统。核心隐喻：把"在线云文档"换成一块**面向 AI 的协作板（Board）**，
 每个参与方用自己的 AI 工具在板上**只追加、不修改**地贡献内容，最终共同完成一件事。
 
+> skill 版本：0.1.0（与插件版本一致；服务端若声明 min_skill_version 且高于此值，按 -1 节提示用户更新）
+
 依赖配套的 wandox collab MCP（工具前缀 `collab_`）：`collab_create_board`、`collab_get_board`、
 `collab_append_entry`、`collab_request_attachment_upload`、`collab_commit_attachment`、`collab_list_boards`。
+
+**接口契约以运行时为准**：本文档中出现的工具签名、参数名与必填性仅为编写时的快照；
+实际调用一律以会话中工具的**实时 schema 与描述**为准，两者冲突时**信 schema、不信本文档**
+（服务端随时可能演进接口，schema 是自动更新的权威）。本文档的权威范围是**体验编排**：
+模式路由、质检标准、确认闸门、话术与用户可见层规范。
 
 ---
 
@@ -25,6 +32,9 @@ description: >-
 
 1. 确认 `collab_*` 工具可用；调 `collab_list_boards(limit=1)` 验证 MCP 服务可达。
    自检只读、无副作用，**成功则不向用户提任何"自检"字样**，直接继续用户要做的事。
+   若响应 meta 中带有 `min_skill_version` 且高于本文档头部的 skill 版本，完成当前请求后
+   顺带提醒一句：「wandox collab 有新版本了，对我说"更新 wandox collab"就能升级。」
+   （提醒每会话至多一次，不阻塞任何操作。）
 2. 若是本机首次使用且自检通过，顺带用一句话开场，让用户知道"已经能用了"：
    > 「wandox collab 已就绪。你可以说"创建一个协作板，主题是××"，或发我一个 bd_ 开头的板号让我看看。」
    开场只此一句，不展开教程；用户已带着明确指令来的（如已给出 board_id），则不开场、直接执行。

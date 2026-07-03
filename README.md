@@ -18,6 +18,22 @@
 
 验证是否装好：问 AI"你现在有 collab_ 开头的工具吗"，能列出 collab_create_board 等即为生效。
 
+## 更新到新版本
+
+和安装一样，发一句话给 AI 即可。
+
+通过插件安装的：
+
+> 更新wandox-collab插件到最新版本（插件市场 https://github.com/law52525/wandox-marketplace.git ），更新完成后告诉我是否需要重启或新开会话。
+
+当年手动配置过 collab skill / MCP 的（没走插件）：
+
+> 从 https://github.com/law52525/wandox-marketplace 仓库拉取最新的 wandox-collab/skills/collab/SKILL.md ，覆盖我本地手动配置的 collab skill 文件，并确认 MCP 地址是 https://ai-api.wandox.com/mcp/collab 。完成后告诉我改了哪里。
+
+> 手动配置没有更新通道，建议顺手迁移到插件安装（用上面的安装提示词装一次，再删掉手动配置），以后更新一句话搞定。
+
+MCP 是远程服务，无需更新——工具能力在服务端发布后自动对所有用户生效。
+
 另外，第一次往协作板提交内容时，AI 会顺口问一句你怎么称呼（同事在板上看到的名字），回个名字就行；只问这一次，之后换工具也不再问。
 
 也可以手动安装（以 Claude Code 为例）：
