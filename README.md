@@ -30,7 +30,7 @@
 
 > 从 https://github.com/law52525/wandox-marketplace 仓库拉取最新的 wandox-collab/skills/collab/SKILL.md ，覆盖我本地手动配置的 collab skill 文件，并确认 MCP 地址是 https://ai-api.wandox.com/mcp/collab 。完成后告诉我改了哪里。
 
-> 手动配置没有更新通道，建议顺手迁移到插件安装（用上面的安装提示词装一次，再删掉手动配置），以后更新一句话搞定。
+（小建议：手动配置没有更新通道，不妨趁这次迁移到插件安装——用最上面的安装提示词装一次、删掉手动配置，以后更新一句话搞定。）
 
 MCP 是远程服务，无需更新——工具能力在服务端发布后自动对所有用户生效。
 
