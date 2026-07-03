@@ -4,11 +4,11 @@
 
 **打开一个会话，把下面这段话发给 AI**，即可一键装好 **Wandox Collab**（skill + 远程 MCP，无需鉴权）：
 
-> 安装插件市场 https://github.com/law52525/wandox-marketplace.git ，然后安装wandox-collab插件并安装插件里的wandox collab skill和wandox collab mcp。安装完成后请明确告诉我：1) 是否安装成功；2) 是否需要重启本工具或新开会话才能生效（如需要请提醒我操作）；3) 生效后我可以直接说什么来开始用，例如"创建一个协作板，主题是××，参与方是××"或"看看协作板 bd_xxx，我能补充什么"。
+> 安装插件市场 https://github.com/law52525/wandox-marketplace.git ，然后安装wandox-collab插件并安装插件里的wandox collab skill和wandox collab mcp。安装完成后请明确告诉我：1) 是否安装成功；2) 提醒我重启本工具来加载插件（绝大多数 AI 工具需要重启才生效，新开会话通常没用）；3) 生效后我可以直接说什么来开始用，例如"创建一个协作板，主题是××，参与方是××"或"看看协作板 bd_xxx，我能补充什么"。
 
 ## 装好之后
 
-多数工具需要**重启或新开一个会话**，插件的 skill 和 MCP 才会加载进来——装完"没反应"通常只是还没重启，不是没装好。
+装完后**重启一次 AI 工具**，插件的 skill 和 MCP 才会加载进来（实测绝大多数工具仅新开会话不够）——装完"没反应"通常只是还没重启，不是没装好。
 
 生效后新开会话，直接说一句话即可开始，例如：
 
@@ -24,7 +24,7 @@
 
 通过插件安装的：
 
-> 更新wandox-collab插件到最新版本（插件市场 https://github.com/law52525/wandox-marketplace.git ），更新完成后告诉我是否需要重启或新开会话。
+> 更新wandox-collab插件到最新版本（插件市场 https://github.com/law52525/wandox-marketplace.git ），更新完成后提醒我重启本工具以加载新版本。
 
 当年手动配置过 collab skill / MCP 的（没走插件）：
 
