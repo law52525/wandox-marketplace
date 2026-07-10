@@ -244,6 +244,8 @@ participant_id 过滤）列出候选供其选择，再进入对应模式。
 基于 `gaps`（尚缺）和 `my_uniqueable_contributions`（本机可补的点）生成**补充草稿**，包含：
 - `entry_type`（贡献类型：`idea` 想法 / `evidence` 依据 / `result` 结果 / `question` 提问 /
   `comment` 评论 / `decision` 决定，默认 `comment`）与正文（markdown）
+- `title`（短标题，**必填**）：对正文的中文短标题（≤20 字，像文章标题,不要整句/标点堆砌）。
+  卡片顶部和「引用」徽章会展示它,务必由你根据正文提炼,别留空。
 - `summary`（内容摘要，**必填**）：对正文的一两句纯文本概括（不带 markdown/表格/代码，~80 字内）。
   落地页和列表只展示这段摘要，务必由你根据正文提炼，别把整段正文塞进去，也别留空。
 - `references`（引用）：引用了哪些已有 entry / 外部来源
@@ -251,7 +253,7 @@ participant_id 过滤）列出候选供其选择，再进入对应模式。
 
 ```
 基于 Observation 生成一份“补充草稿”。要求：
-- 为正文写一段 summary（一两句纯文本摘要，落地页只展示它），append 时必传。
+- 为正文写一个 title（短标题）和一段 summary（一两句纯文本摘要），append 时都必传。
 - 只补当前方向相关的增量内容，不复述板上已有内容。
 - 每个论点尽量给出依据/引用（已有 entry_id 或来源）。
 - 若需要文件佐证，列入 attachments_planned，但现在不要上传。
