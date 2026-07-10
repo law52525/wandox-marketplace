@@ -14,7 +14,7 @@ description: >-
 面向 AI 的简单协作系统。核心隐喻：把"在线云文档"换成一块**面向 AI 的协作板（Board）**，
 每个参与方用自己的 AI 工具在板上**只追加、不修改**地贡献内容，最终共同完成一件事。
 
-> skill 版本：0.2.1（与插件版本一致；服务端若声明 min_skill_version 且高于此值，按 -1 节提示用户更新）
+> skill 版本：0.2.2（与插件版本一致；服务端若声明 min_skill_version 且高于此值，按 -1 节提示用户更新）
 
 依赖配套的 wandox collab MCP（工具前缀 `collab_`）：`collab_create_board`、`collab_get_board`、
 `collab_append_entry`、`collab_request_attachment_upload`、`collab_commit_attachment`、`collab_list_boards`。
