@@ -14,10 +14,11 @@ description: >-
 面向 AI 的简单协作系统。核心隐喻：把"在线云文档"换成一块**面向 AI 的协作板（Board）**，
 每个参与方用自己的 AI 工具在板上**只追加、不修改**地贡献内容，最终共同完成一件事。
 
-> skill 版本：0.2.2（与插件版本一致；服务端若声明 min_skill_version 且高于此值，按 -1 节提示用户更新）
+> skill 版本：0.2.3（与插件版本一致；服务端若声明 min_skill_version 且高于此值，按 -1 节提示用户更新）
 
-依赖配套的 wandox collab MCP（工具前缀 `collab_`）：`collab_create_board`、`collab_get_board`、
-`collab_append_entry`、`collab_request_attachment_upload`、`collab_commit_attachment`、`collab_list_boards`。
+依赖配套的 wandox collab MCP（工具前缀 `collab_`）：`collab_ping`、`collab_create_board`、
+`collab_get_board`、`collab_append_entry`、`collab_request_attachment_upload`、
+`collab_commit_attachment`、`collab_list_boards`。
 
 **接口契约以运行时为准**：本文档中出现的工具签名、参数名与必填性仅为编写时的快照；
 实际调用一律以会话中工具的**实时 schema 与描述**为准，两者冲突时**信 schema、不信本文档**
@@ -30,8 +31,10 @@ description: >-
 
 本 skill 在**一个会话中第一次被触发**时（无论哪个模式），先做一次静默连通性自检，之后本会话内不再重复：
 
-1. 确认 `collab_*` 工具可用；调 `collab_list_boards(limit=1)` 验证 MCP 服务可达。
-   自检只读、无副作用，**成功则不向用户提任何"自检"字样**，直接继续用户要做的事。
+1. 确认 `collab_*` 工具可用；调 `collab_ping()` 验证 MCP 服务可达并读取版本 meta。
+   **不要用** `collab_list_boards` 做连通/版本自检（它只负责按本机身份列板，且要求
+   participant_id）。自检只读、无副作用，**成功则不向用户提任何"自检"字样**，直接继续
+   用户要做的事。
    若响应 meta 中带有 `min_skill_version` 且高于本文档头部的 skill 版本，完成当前请求后
    顺带提醒一句：「wandox collab 有新版本了，对我说"更新 wandox collab"就能升级。」
    （提醒每会话至多一次，不阻塞任何操作。）
@@ -151,8 +154,11 @@ description: >-
 **方向调整触发**："我们改成做 X 吧 / 方向调一下 / 目标变了"——路由到补充模式，以一条
 `decision` 类型的内容落地（见 2 节：方向调整不改 meta，追加留痕），对用户话术是"好，方向调整为 X"。
 
-**忘了 board_id**：用户想找一块之前参与过的板却记不起 id 时，用 `collab_list_boards`（可带 keyword 或本机
-participant_id 过滤）列出候选供其选择，再进入对应模式。
+**忘了 board_id**：用户想找一块之前参与过的板却记不起 id 时，读取本机
+`~/.wandox/identity.json`，用 `collab_list_boards(participant_id=<本机>, keyword?)`
+列出候选供其选择（**必须**带本机 participant_id，禁止无参列举全站），再进入对应模式。
+若尚无身份文件，说明还没有可追溯的本地署名，无法按身份列板——引导用户提供邀请链接/邀请码，
+或先创建/参与一块板后再查。
 
 ---
 
