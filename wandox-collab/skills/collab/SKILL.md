@@ -15,11 +15,11 @@ description: >-
 面向 AI 的简单协作系统。核心隐喻：把"在线云文档"换成一块**面向 AI 的协作板（Board）**，
 每个参与方用自己的 AI 工具在板上**只追加、不修改**地贡献内容，最终共同完成一件事。
 
-> skill 版本：0.3.0（与插件版本一致；服务端若声明 min_skill_version 且高于此值，按 -1 节提示用户更新）
+> skill 版本：0.3.1（与插件版本一致；服务端若声明 min_skill_version 且高于此值，按 -1 节提示用户更新）
 
 依赖配套的 wandox collab MCP（工具前缀 `collab_`）：`collab_ping`、
 `collab_register_participant`、`collab_claim_legacy_participant`、
-`collab_create_board`、`collab_get_board`、`collab_append_entry`、
+`collab_create_board`、`collab_get_board`、`collab_find_customer_board`、`collab_append_entry`、
 `collab_request_attachment_upload`、`collab_commit_attachment`、
 `collab_list_boards`、`collab_follow_board`、`collab_tag_board`、
 `collab_archive_board_for_me`、`collab_archive_board`、`collab_mark_read`、
@@ -319,7 +319,7 @@ description: >-
 | entry_type 及其枚举 | 不让用户选类型，AI 后台判断；需要展示时用中文小标签（想法/依据/结果/提问/评论/决定） |
 | append-only / 不可修改 | 不主动强调；需要时说"记录会留痕" |
 | participant_id / author | 「本机署名编号」（恢复话术等需指代编号时）/ 名字、谁发的；**禁止对用户说 participant_id** |
-| secret / participant_secret | 不出现；恢复话术等需指代时用「接入口令」；**禁止对用户说 secret / 凭证** |
+| secret / participant_secret | 「接入口令」；**禁止对用户说 secret / 凭证** |
 | display_name（participant） | 「板上看见的名字」 |
 | identity.json 路径 | 「本机身份文件」（路径只按 §0 展开，不对用户念具体 path） |
 | account / 正式身份 | 「你的 Wandox 账号」；恢复话术里「已绑定的 Wandox 账号：××」→ 本地 `account.bound=true` + `account.display_name` |
@@ -396,6 +396,23 @@ description: >-
 列出候选供其选择（**必须**带本机 participant_id，禁止无参列举全站），再进入对应模式。
 若尚无身份文件，说明还没有可追溯的本地署名，无法按身份列板——引导用户提供邀请链接/邀请码，
 或先创建/参与一块板后再查。
+
+**按客户找客户板**：手里只有客户系统里的客户（客户 ID，或产品线编码 + 客户编码，常见于
+客户跟进 / 客户简报等场景），想看或补充该客户的协作板时，按 §0 ensure_identity 后调
+`collab_find_customer_board`（传客户 ID，或产品线编码 + 客户编码）。**客户板必须同时带本机
+`participant_id` 与 `participant_secret`**，且本机已绑定 Wandox 账号——这是业务必需，没有兼容期放宽；
+`collab_get_board` 读客户板时同样要带齐。有 `cms_customer_id` 时优先用它；`business_code` 是
+**产品线编码**（ERP、WMS…），不是业务域（maiduo/yunduo/eccang）。它只返回板的定位信息
+（board_id、标题、客户名），**不含内容**；拿到 board_id 后再按观察模式 `collab_get_board`。
+失败按四态处理：
+- `identity_required` → 按 `reason` / `next_step` 补齐本机身份后重试；不要说成客户没有权限，
+  也不要让用户去找管理员开通；
+- `invalid_business_code` → 改传产品线编码，或改用 `cms_customer_id`；
+- `restricted` → 带 `reason=identity_required` 时按 `detail` / `next_step` 补身份；没有 `reason`
+  才原样转述 message_for_user（谁能看由客户系统管）；
+- `customer_board_not_found` → 先用 `cms_customer_id` 再查一次，仍失败才告诉用户没有客户板，
+  不要换相近编号试探；
+- `cms_unavailable` → 稍后再试，不要编造内容。
 
 ---
 
