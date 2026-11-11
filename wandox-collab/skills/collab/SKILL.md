@@ -15,7 +15,7 @@ description: >-
 面向 AI 的简单协作系统。核心隐喻：把"在线云文档"换成一块**面向 AI 的协作板（Board）**，
 每个参与方用自己的 AI 工具在板上**只追加、不修改**地贡献内容，最终共同完成一件事。
 
-> skill 版本：0.4.0（与插件版本一致；服务端若声明 min_skill_version 且高于此值，按 -1 节提示用户更新）
+> skill 版本：0.4.1（与插件版本一致；服务端若声明 min_skill_version 且高于此值，按 -1 节提示用户更新）
 
 依赖配套的 wandox collab MCP（工具前缀 `collab_`）：`collab_ping`、
 `collab_register_participant`、`collab_claim_legacy_participant`、
@@ -406,14 +406,21 @@ description: >-
 **产品线编码**（ERP、WMS…），不是业务域（maiduo/yunduo/eccang）。它只返回板的定位信息
 （board_id、标题、客户名），**不含内容**；拿到 board_id 后再按观察模式 `collab_get_board`。
 
-客户板按**用途**分两类，用 `board_kind` 区分（取值只有 `follow` / `brief`）：`follow` 是
-CMS 跟进板（默认，老调用方不传即按它查）；`brief` 是客户简报板，标题以「· 客户简报」结尾，
-只放简报、不含跟进记录。用户要**简报板**时，`collab_find_customer_board` 必须显式传
-`board_kind="brief"`；若返回 `customer_board_not_found`，说明该客户还没有简报板，用
-`collab_ensure_customer_board(board_kind="brief", customer_name=<客户名>, …)` 代建——
+客户板按**用途**分三类，用 `board_kind` 区分（取值只有 `follow` / `brief` / `suggestion`）：
+`follow` 是 CMS 跟进板（默认，老调用方不传即按它查）；`brief` 是客户简报板，标题以
+「· 客户简报」结尾，只放简报、不含跟进记录；`suggestion` 是回访建议采纳记录板，标题以
+「· 回访建议采纳」结尾，只放采纳/不采纳的决策流水。用户要**非默认用途**时，
+`collab_find_customer_board` 必须显式传 `board_kind="brief"` / `board_kind="suggestion"`；
+若返回 `customer_board_not_found`，说明该客户还没有这个用途的板，用
+`collab_ensure_customer_board(board_kind=<用途>, customer_name=<客户名>, …)` 代建——
 它幂等（已有则返回同一块板、`created=false`），**不要用 `collab_create_board` 自建**：
 自建板没有客户绑定，CMS 权限判定与按客户找板都会失效。代建返回的 `data.board_kind` 是实际
 用途、`data.created` 表示是否本次新建；拿到 `board_id` 后同样按观察模式读取或追加。
+
+要写「采纳 / 不采纳」决策时，**先用
+`collab_ensure_customer_board(board_kind="suggestion", customer_name=<客户名>, …)` 取板**
+（幂等，首次产生决策才建），再 `collab_append_entry`，`entry_type` 用 `decision`。
+不要自己遍历客户名单预建，也不要用 `collab_create_board` 自建。
 
 失败按四态处理：
 - `identity_required` → 按 `reason` / `next_step` 补齐本机身份后重试；不要说成客户没有权限，
@@ -423,7 +430,7 @@ CMS 跟进板（默认，老调用方不传即按它查）；`brief` 是客户�
   才原样转述 message_for_user（谁能看由客户系统管）；
 - `customer_board_not_found` → 先用 `cms_customer_id` 再查一次，仍失败才告诉用户没有客户板，
   不要换相近编号试探；
-- `invalid_board_kind` → 只支持 `follow` / `brief`，不要自己编用途；
+- `invalid_board_kind` → 只支持 `follow` / `brief` / `suggestion`，不要自己编用途；
 - `invalid_customer_query` → 补齐客户定位信息与 `customer_name`（必填，≤200 字）后重试；
 - `cms_unavailable` → 稍后再试，不要编造内容。
 
